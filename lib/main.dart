@@ -7,15 +7,69 @@ const MethodChannel recorder_channel =
 const MethodChannel player_channel =
     const MethodChannel("bz.rxla.flutter/player");
 
+class Language {
+  final String name;
+  final String code;
+
+  const Language(this.name, this.code);
+}
+
+const languages = const [
+  const Language('Francais', 'fr_FR'),
+  const Language('English', 'en_US'),
+  const Language('русский', 'ru_RU'),
+  const Language('italiano', 'it_IT'),
+];
+
 void main() {
-  runApp(new MaterialApp(
-      home: new Scaffold(
-          appBar: new AppBar(
-              title: new Text('Sytôdy'), backgroundColor: Colors.blueGrey),
-          body: new TranscriptorApp())));
+  runApp(new SytodyApp());
+}
+
+class SytodyApp extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => new SytodyAppState();
+}
+
+class SytodyAppState extends State<SytodyApp> {
+  Language selectedLang = languages[0];
+
+  @override
+  Widget build(BuildContext context) {
+    return new MaterialApp(
+        home: new Scaffold(
+      appBar: new AppBar(
+          title: new Row(children: [
+            new Image.asset('assets/sytody.png', fit: BoxFit.fitHeight),
+            new Text('Sytôdy'),
+          ]),
+          backgroundColor: Colors.blueGrey,
+          actions: [
+            new PopupMenuButton<Language>(
+              onSelected: (Language value) =>
+                  setState(() => selectedLang = value),
+              itemBuilder: (BuildContext context) => languages
+                  .map((l) => new CheckedPopupMenuItem<Language>(
+                        value: l,
+                        checked: selectedLang == l,
+                        child: new Text(l.name),
+                      ))
+                  .toList(),
+            )
+          ]),
+      body: new TranscriptorApp(lang: selectedLang),
+    ));
+  }
+
+  selectLang(Language lang) {
+    setState(() => selectedLang = lang);
+  }
 }
 
 class TranscriptorApp extends StatefulWidget {
+  final Language lang;
+
+  TranscriptorApp({this.lang});
+
   @override
   _TranscriptorAppState createState() => new _TranscriptorAppState();
 }
@@ -31,8 +85,8 @@ class _TranscriptorAppState extends State<TranscriptorApp> {
 
   bool get isNotEmpty => transcription != '';
 
-  get numArchived => todos.where((t)=>t.complete).length;
-  get incompleteTasks => todos.where((t)=>!t.complete);
+  get numArchived => todos.where((t) => t.complete).length;
+  Iterable<Task> get incompleteTasks => todos.where((t) => !t.complete);
 
   @override
   void initState() {
@@ -80,11 +134,12 @@ class _TranscriptorAppState extends State<TranscriptorApp> {
   }
 
   Future startRecognition() async {
-    final res = await recorder_channel.invokeMethod("startRecognition");
+    final res = await recorder_channel.invokeMethod(
+        "startRecognition", widget.lang.code);
     if (!res)
       showDialog(
           context: context,
-          child: new SimpleDialog(title: const Text("Error"), children: [
+          child: new SimpleDialog(title: new Text("Error"), children: [
             new Padding(
                 padding: new EdgeInsets.all(12.0),
                 child: new Text('Recognition not started'))
@@ -135,15 +190,15 @@ class _TranscriptorAppState extends State<TranscriptorApp> {
   deleteTaskHandler(Task t) {
     setState(() {
       todos.remove(t);
-      showStatus();
+      showStatus("cancelled");
     });
   }
 
   void completeTaskHandler(Task completed) {
     setState(() {
       todos =
-        todos.map((t) => completed == t ? (t..complete = true) : t).toList();
-      showStatus();
+          todos.map((t) => completed == t ? (t..complete = true) : t).toList();
+      showStatus("completed");
     });
   }
 
@@ -153,29 +208,19 @@ class _TranscriptorAppState extends State<TranscriptorApp> {
           ? getIconButton(authorized ? Icons.mic : Icons.mic_off,
               authorized ? startRecognition : null,
               color: Colors.white, fab: true)
-          : getIconButton(Icons.stop, isListening ? stopRecognition : null,
-              color: Colors.grey.shade600,
-              backgroundColor: Colors.grey.shade600,
+          : getIconButton(Icons.add, isListening ? saveTranscription : null,
+              color: Colors.white,
+              backgroundColor: Colors.greenAccent,
               fab: true),
     ];
     Row buttonBar = new Row(mainAxisSize: MainAxisSize.min, children: buttons);
-    if (isNotEmpty) {
-      buttons.insert(
-          0,
-          getIconButton(
-            Icons.close,
-            cancelRecognitionHandler,
-            color: Colors.grey,
-          ));
-      buttons.add(getIconButton(Icons.add, saveTranscription,
-          color: Colors.green));
-    }
     return buttonBar;
   }
 
-  void showStatus() {
-    Scaffold.of(context).showSnackBar(new SnackBar(
-      content: new Text("Task complete : ${incompleteTasks} left / ${numArchived} archived")));
+  void showStatus(String action) {
+    final label = "Task $action : ${incompleteTasks.length} left "
+        "/ ${numArchived} archived";
+    Scaffold.of(context).showSnackBar(new SnackBar(content: new Text(label)));
   }
 }
 
@@ -185,7 +230,9 @@ Widget getTranscriptionBox(
         width: width,
         color: Colors.grey.shade200,
         child: new Row(children: [
-          new Expanded(child: new Text(text)),
+          new Expanded(
+              child: new Padding(
+                  padding: new EdgeInsets.all(8.0), child: new Text(text))),
           new IconButton(
               icon: new Icon(Icons.close, color: Colors.grey.shade600),
               onPressed: text != '' ? () => onCancel() : null),
@@ -210,7 +257,7 @@ Widget getIconButton(IconData icon, VoidCallback onPress,
             onPressed: onPress,
             backgroundColor: backgroundColor)
         : new IconButton(
-            icon: new Icon(icon), color: color, onPressed: onPress),
+            icon: new Icon(icon, size: 32.0), color: color, onPressed: onPress),
   );
 }
 

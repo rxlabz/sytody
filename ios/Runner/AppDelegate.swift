@@ -3,11 +3,12 @@ import Flutter
 import Speech
 
 @UIApplicationMain
-@objc class AppDelegate: FlutterAppDelegate, SFSpeechRecognizerDelegate /*, FlutterStreamHandler */ {
-  //private var eventSink: FlutterEventSink?
+@objc class AppDelegate: FlutterAppDelegate, SFSpeechRecognizerDelegate {
 
-
-  private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "fr_FR"))!
+  private let speechRecognizerFr = SFSpeechRecognizer(locale: Locale(identifier: "fr_FR"))!
+  private let speechRecognizerEn = SFSpeechRecognizer(locale: Locale(identifier: "en_US"))!
+  private let speechRecognizerRu = SFSpeechRecognizer(locale: Locale(identifier: "ru_RU"))!
+  private let speechRecognizerIt = SFSpeechRecognizer(locale: Locale(identifier: "it_IT"))!
 
   private var recorderChannel: FlutterMethodChannel?
 
@@ -30,13 +31,11 @@ import Speech
     recorderChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if ("startRecognition" == call.method) {
-        self.startRecognition(result: result)
+        self.startRecognition(lang: call.arguments as! String, result: result)
       } else if ("stopRecognition" == call.method) {
         self.stopRecognition(result: result)
       } else if ("cancelRecognition" == call.method) {
         self.cancelRecognition(result: result)
-        /*self.cancelled = true
-        self.stopRecognition(result: result)*/
       } else if ("activateRecognition" == call.method) {
         self.activateRecognition(result: result)
       } else {
@@ -47,13 +46,12 @@ import Speech
   }
 
   func activateRecognition(result: @escaping FlutterResult) {
-    speechRecognizer.delegate = self
+    speechRecognizerFr.delegate = self
+    speechRecognizerEn.delegate = self
+    speechRecognizerRu.delegate = self
+    speechRecognizerIt.delegate = self
 
     SFSpeechRecognizer.requestAuthorization { authStatus in
-      /*
-          The callback may not be called on the main thread. Add an
-          operation to the main queue to update the record button's state.
-      */
       OperationQueue.main.addOperation {
         switch authStatus {
         case .authorized:
@@ -72,29 +70,28 @@ import Speech
     }
   }
 
-  private func startRecognition(result: FlutterResult) {
+  private func startRecognition(lang: String, result: FlutterResult) {
 
     if audioEngine.isRunning {
       audioEngine.stop()
       recognitionRequest?.endAudio()
       result(false)
     } else {
-      try! start()
+      try! start(lang: lang)
       result(true)
     }
-
   }
 
-  private func cancelRecognition(result:FlutterResult?) {
+  private func cancelRecognition(result: FlutterResult?) {
     if let recognitionTask = recognitionTask {
       recognitionTask.cancel()
       self.recognitionTask = nil
-      if let r = result{
+      if let r = result {
         r(false)
       }
     }
   }
-  
+
   private func stopRecognition(result: FlutterResult) {
     if audioEngine.isRunning {
       audioEngine.stop()
@@ -103,7 +100,7 @@ import Speech
     result(false)
   }
 
-  private func start() throws {
+  private func start(lang: String) throws {
 
     cancelRecognition(result: nil)
 
@@ -122,6 +119,8 @@ import Speech
     }
 
     recognitionRequest.shouldReportPartialResults = true
+
+    let speechRecognizer = getRecognizer(lang: lang)
 
     recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
       var isFinal = false
@@ -147,15 +146,30 @@ import Speech
     }
 
     let RecognitionFormat = inputNode.outputFormat(forBus: 0)
-    inputNode.installTap(onBus: 0, bufferSize: 1024, format: RecognitionFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
+    inputNode.installTap(onBus: 0, bufferSize: 1024, format: RecognitionFormat) {
+      (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
       self.recognitionRequest?.append(buffer)
     }
 
     audioEngine.prepare()
-
     try audioEngine.start()
 
     recorderChannel!.invokeMethod("onRecognitionStarted", arguments: nil)
+  }
+
+  func getRecognizer(lang: String) -> Speech.SFSpeechRecognizer {
+    switch (lang) {
+    case "fr_FR":
+      return speechRecognizerFr
+    case "en_US":
+      return speechRecognizerEn
+    case "ru_RU":
+      return speechRecognizerRu
+    case "it_IT":
+      return speechRecognizerIt
+    default:
+      return speechRecognizerFr
+    }
   }
 
   public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
