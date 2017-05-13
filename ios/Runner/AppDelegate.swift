@@ -17,6 +17,8 @@ import Speech
 
   private let audioEngine = AVAudioEngine()
 
+  private var cancelled: Bool = false
+
   override func application(
      _ application: UIApplication,
      didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
@@ -27,26 +29,24 @@ import Speech
        binaryMessenger: controller)
     recorderChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      if ("startRecording" == call.method) {
-        self.startRecording(result: result)
-      } else if ("stopRecording" == call.method) {
-        self.stopRecording(result: result)
-      }  else if ("activateRecognition" == call.method) {
+      if ("startRecognition" == call.method) {
+        self.startRecognition(result: result)
+      } else if ("stopRecognition" == call.method) {
+        self.stopRecognition(result: result)
+      } else if ("cancelRecognition" == call.method) {
+        self.cancelRecognition(result: result)
+        /*self.cancelled = true
+        self.stopRecognition(result: result)*/
+      } else if ("activateRecognition" == call.method) {
         self.activateRecognition(result: result)
       } else {
         result(FlutterMethodNotImplemented)
       }
     })
-
-    /*let chargingChannel = FlutterEventChannel.init(name: "samples.flutter.io/charging",
-     binaryMessenger: controller)
-
-     chargingChannel.setStreamHandler(self)
-     */
     return true
   }
 
-  func activateRecognition(result:@escaping FlutterResult){
+  func activateRecognition(result: @escaping FlutterResult) {
     speechRecognizer.delegate = self
 
     SFSpeechRecognizer.requestAuthorization { authStatus in
@@ -72,34 +72,40 @@ import Speech
     }
   }
 
-  private func startRecording(result: FlutterResult) {
+  private func startRecognition(result: FlutterResult) {
 
     if audioEngine.isRunning {
       audioEngine.stop()
       recognitionRequest?.endAudio()
-      result(0)
+      result(false)
     } else {
       try! start()
-      result(1)
+      result(true)
     }
 
   }
 
-  private func stopRecording(result: FlutterResult) {
+  private func cancelRecognition(result:FlutterResult?) {
+    if let recognitionTask = recognitionTask {
+      recognitionTask.cancel()
+      self.recognitionTask = nil
+      if let r = result{
+        r(false)
+      }
+    }
+  }
+  
+  private func stopRecognition(result: FlutterResult) {
     if audioEngine.isRunning {
       audioEngine.stop()
       recognitionRequest?.endAudio()
     }
-    result(0)
+    result(false)
   }
 
   private func start() throws {
 
-    // Cancel the previous task if it's running.
-    if let recognitionTask = recognitionTask {
-      recognitionTask.cancel()
-      self.recognitionTask = nil
-    }
+    cancelRecognition(result: nil)
 
     let audioSession = AVAudioSession.sharedInstance()
     try audioSession.setCategory(AVAudioSessionCategoryRecord)
@@ -115,11 +121,8 @@ import Speech
       fatalError("Unable to created a SFSpeechAudioBufferRecognitionRequest object")
     }
 
-    // Configure request so that results are returned before audio recording is finished
     recognitionRequest.shouldReportPartialResults = true
 
-    // A recognition task represents a speech recognition session.
-    // We keep a reference to the task so that it can be cancelled.
     recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
       var isFinal = false
 
@@ -127,10 +130,10 @@ import Speech
         print("Speech : \(result.bestTranscription.formattedString)")
         self.recorderChannel?.invokeMethod("onSpeech", arguments: result.bestTranscription.formattedString)
         isFinal = result.isFinal
-        if isFinal{
+        if isFinal {
           self.recorderChannel!.invokeMethod(
              "onRecognitionComplete",
-             arguments: result.bestTranscription.formattedString
+             arguments: self.cancelled ? "" : result.bestTranscription.formattedString
           )
         }
       }
@@ -140,12 +143,11 @@ import Speech
         inputNode.removeTap(onBus: 0)
         self.recognitionRequest = nil
         self.recognitionTask = nil
-
       }
     }
 
-    let recordingFormat = inputNode.outputFormat(forBus: 0)
-    inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
+    let RecognitionFormat = inputNode.outputFormat(forBus: 0)
+    inputNode.installTap(onBus: 0, bufferSize: 1024, format: RecognitionFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
       self.recognitionRequest?.append(buffer)
     }
 
@@ -155,8 +157,6 @@ import Speech
 
     recorderChannel!.invokeMethod("onRecognitionStarted", arguments: nil)
   }
-
-  // MARK: SFSpeechRecognizerDelegate
 
   public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
     if available {
