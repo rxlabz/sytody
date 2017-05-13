@@ -13,8 +13,7 @@ cd sytody
 flutter run
 ```
 
-[Video](https://youtu.be/7MGuNZfgGWw)
-
+:tv: [Video demo](https://youtu.be/7MGuNZfgGWw)
 
 
 ## Getting Started
