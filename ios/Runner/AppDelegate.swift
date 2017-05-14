@@ -18,8 +18,6 @@ import Speech
 
   private let audioEngine = AVAudioEngine()
 
-  private var cancelled: Bool = false
-
   override func application(
      _ application: UIApplication,
      didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
@@ -132,7 +130,7 @@ import Speech
         if isFinal {
           self.recorderChannel!.invokeMethod(
              "onRecognitionComplete",
-             arguments: self.cancelled ? "" : result.bestTranscription.formattedString
+             arguments: result.bestTranscription.formattedString
           )
         }
       }
@@ -157,7 +155,7 @@ import Speech
     recorderChannel!.invokeMethod("onRecognitionStarted", arguments: nil)
   }
 
-  func getRecognizer(lang: String) -> Speech.SFSpeechRecognizer {
+  private func getRecognizer(lang: String) -> Speech.SFSpeechRecognizer {
     switch (lang) {
     case "fr_FR":
       return speechRecognizerFr
