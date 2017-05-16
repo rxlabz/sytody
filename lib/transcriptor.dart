@@ -111,37 +111,33 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         setState(() => isListening = call.arguments);
         break;
       case "onSpeech":
-        print(
-          '_TranscriptorAppState._platformCallHandler '
+        print('_TranscriptorAppState._platformCallHandler '
             '=> onSpeech = ${call.arguments}');
-        if(todos.isNotEmpty){
-          if(transcription != todos.last.label){
+        if (todos.isNotEmpty) {
+          if (transcription != todos.last.label) {
             setState(() => transcription = call.arguments);
           }
         } else
           setState(() => transcription = call.arguments);
         break;
       case "onRecognitionStarted":
-        print(
-          '_TranscriptorAppState._platformCallHandler '
+        print('_TranscriptorAppState._platformCallHandler '
             '=> started');
         setState(() => isListening = true);
         break;
       case "onRecognitionComplete":
-        print(
-            '_TranscriptorAppState._platformCallHandler '
-              '=> onRecognitionComplete = ${call.arguments}');
+        print('_TranscriptorAppState._platformCallHandler '
+            '=> onRecognitionComplete = ${call.arguments}');
         setState(() {
           //isListening = false;
-          if( todos.isEmpty){
-              transcription = call.arguments;
-              return;
-          }
-
-          // on ios user can have correct partial recognition
-          // => if user add it before complete recognition just clear the transcription
-          if ( call.arguments == todos.last?.label)
+          if (todos.isEmpty) {
+            transcription = call.arguments;
+          } else if (call.arguments == todos.last?.label)
+            // on ios user can have correct partial recognition
+            // => if user add it before complete recognition just clear the transcription
             transcription = '';
+          else
+            transcription = call.arguments;
         });
         break;
       default:

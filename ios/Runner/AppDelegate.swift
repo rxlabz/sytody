@@ -69,7 +69,6 @@ import Speech
   }
 
   private func startRecognition(lang: String, result: FlutterResult) {
-
     if audioEngine.isRunning {
       audioEngine.stop()
       recognitionRequest?.endAudio()
