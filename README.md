@@ -1,6 +1,6 @@
 # Sytôdy, a Flutter "speech to text" todo app POC
 
-:warning: iOS10(Swift) only for now.
+:warning: iOS10(Swift) & Android
 
 [![screenshot](screenshot.png)](https://youtu.be/7MGuNZfgGWw)
 
@@ -25,12 +25,8 @@ The flutter app open a channel on the host platform (iOS only for now). It uses 
  
 ### Recognition
 
-#### [x] iOS
-
-- [Speech API](https://developer.apple.com/reference/speech)
-
-#### [ ] Android
-
+- iOS : [Speech API](https://developer.apple.com/reference/speech)
+- Android : [SpeechRecognizer](https://developer.android.com/reference/android/speech/SpeechRecognizer.html)
 
 ### UI
 

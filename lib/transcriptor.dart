@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttr_protorecorder/languages.dart';
@@ -31,7 +32,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
   @override
   void initState() {
     super.initState();
-    Recognizer.setMethodCallHandler(_platformCallHandler);
+    SpeechRecognizer.setMethodCallHandler(_platformCallHandler);
     _activateRecognition();
   }
 
@@ -57,7 +58,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
                   .toList())),
       _buildButtonBar(),
     ];
-    if (transcription != '')
+    if (isListening || transcription != '')
       blocks.insert(
           1,
           _buildTranscriptionBox(
@@ -80,7 +81,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
   }
 
   Future _startRecognition() async {
-    final res = await Recognizer.startRecognition(widget.lang.code);
+    final res = await SpeechRecognizer.start(widget.lang.code);
     if (!res)
       showDialog(
           context: context,
@@ -92,7 +93,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
   }
 
   Future _cancelRecognitionHandler() async {
-    final res = await Recognizer.cancelRecognition();
+    final res = await SpeechRecognizer.cancel();
     setState(() {
       transcription = '';
       isListening = res;
@@ -100,7 +101,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
   }
 
   Future _activateRecognition() async {
-    final res = await Recognizer.activateRecognition();
+    final res = await SpeechRecognizer.activate();
     setState(() => authorized = res);
   }
 
@@ -110,16 +111,37 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         setState(() => isListening = call.arguments);
         break;
       case "onSpeech":
-        if (todos.isEmpty || transcription != todos.last.label)
+        print(
+          '_TranscriptorAppState._platformCallHandler '
+            '=> onSpeech = ${call.arguments}');
+        if(todos.isNotEmpty){
+          if(transcription != todos.last.label){
+            setState(() => transcription = call.arguments);
+          }
+        } else
           setState(() => transcription = call.arguments);
         break;
       case "onRecognitionStarted":
+        print(
+          '_TranscriptorAppState._platformCallHandler '
+            '=> started');
         setState(() => isListening = true);
         break;
       case "onRecognitionComplete":
+        print(
+            '_TranscriptorAppState._platformCallHandler '
+              '=> onRecognitionComplete = ${call.arguments}');
         setState(() {
-          isListening = false;
-          if (call.arguments == todos.last.label) transcription = '';
+          //isListening = false;
+          if( todos.isEmpty){
+              transcription = call.arguments;
+              return;
+          }
+
+          // on ios user can have correct partial recognition
+          // => if user add it before complete recognition just clear the transcription
+          if ( call.arguments == todos.last?.label)
+            transcription = '';
         });
         break;
       default:

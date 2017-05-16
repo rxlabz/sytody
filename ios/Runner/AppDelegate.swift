@@ -28,13 +28,13 @@ import Speech
        binaryMessenger: controller)
     recorderChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
-      if ("startRecognition" == call.method) {
+      if ("start" == call.method) {
         self.startRecognition(lang: call.arguments as! String, result: result)
-      } else if ("stopRecognition" == call.method) {
+      } else if ("stop" == call.method) {
         self.stopRecognition(result: result)
-      } else if ("cancelRecognition" == call.method) {
+      } else if ("cancel" == call.method) {
         self.cancelRecognition(result: result)
-      } else if ("activateRecognition" == call.method) {
+      } else if ("activate" == call.method) {
         self.activateRecognition(result: result)
       } else {
         result(FlutterMethodNotImplemented)
