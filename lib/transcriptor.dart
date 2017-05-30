@@ -88,7 +88,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
           child: new SimpleDialog(title: new Text("Error"), children: [
             new Padding(
                 padding: new EdgeInsets.all(12.0),
-                child: new Text('Recognition not started'))
+                child: const Text('Recognition not started'))
           ]));
   }
 
