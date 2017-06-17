@@ -17,7 +17,7 @@ import java.util.Locale;
 
 public class MainActivity extends FlutterActivity implements RecognitionListener {
 
-    private static final String SPEECH_CHANNEL = "bz.rxla.flutter/recorder";
+    private static final String SPEECH_CHANNEL = "bz.rxla.flutter/recognizer";
     private static final String LOG_TAG = "SYTODY";
     private SpeechRecognizer speech;
     private MethodChannel speechChannel;
@@ -43,23 +43,28 @@ public class MainActivity extends FlutterActivity implements RecognitionListener
                 new MethodChannel.MethodCallHandler() {
                     @Override
                     public void onMethodCall(MethodCall call, MethodChannel.Result result) {
-                        if (call.method.equals("activate")) {
-                            result.success(true);
-                        } else if (call.method.equals("start")) {
-                            recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, getLocale(call.arguments.toString()));
-                            cancelled = false;
-                            speech.startListening(recognizerIntent);
-                            result.success(true);
-                        } else if (call.method.equals("cancel")) {
-                            speech.stopListening();
-                            cancelled = true;
-                            result.success(true);
-                        } else if (call.method.equals("stop")) {
-                            speech.stopListening();
-                            cancelled = false;
-                            result.success(true);
-                        } else {
-                            result.notImplemented();
+                        switch(call.method){
+                            case "activate":
+                                result.success(true); // on Android 6- permissions were given during installation
+                                break;
+                            case "start":
+                                recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, getLocale(call.arguments.toString()));
+                                cancelled = false;
+                                speech.startListening(recognizerIntent);
+                                result.success(true);
+                                break;
+                            case "cancel":
+                                speech.stopListening();
+                                cancelled = true;
+                                result.success(true);
+                                break;
+                            case "stop":
+                                speech.stopListening();
+                                cancelled = false;
+                                result.success(true);
+                                break;
+                            default:
+                                result.notImplemented();
                         }
                     }
                 }

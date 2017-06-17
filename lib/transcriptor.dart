@@ -94,6 +94,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
 
   Future _cancelRecognitionHandler() async {
     final res = await SpeechRecognizer.cancel();
+
     setState(() {
       transcription = '';
       isListening = res;
@@ -111,25 +112,14 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
         setState(() => isListening = call.arguments);
         break;
       case "onSpeech":
-        print('_TranscriptorAppState._platformCallHandler '
-            '=> onSpeech = ${call.arguments}');
-        if (todos.isNotEmpty) {
-          if (transcription != todos.last.label) {
-            setState(() => transcription = call.arguments);
-          }
-        } else
-          setState(() => transcription = call.arguments);
+        if (todos.isNotEmpty) if (transcription == todos.last.label) return;
+        setState(() => transcription = call.arguments);
         break;
       case "onRecognitionStarted":
-        print('_TranscriptorAppState._platformCallHandler '
-            '=> started');
         setState(() => isListening = true);
         break;
       case "onRecognitionComplete":
-        print('_TranscriptorAppState._platformCallHandler '
-            '=> onRecognitionComplete = ${call.arguments}');
         setState(() {
-          //isListening = false;
           if (todos.isEmpty) {
             transcription = call.arguments;
           } else if (call.arguments == todos.last?.label)
@@ -145,7 +135,7 @@ class _TranscriptorAppState extends State<TranscriptorWidget> {
     }
   }
 
-  _deleteTaskHandler(Task t) {
+  void _deleteTaskHandler(Task t) {
     setState(() {
       todos.remove(t);
       _showStatus("cancelled");

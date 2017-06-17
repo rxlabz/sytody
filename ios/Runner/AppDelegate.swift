@@ -10,7 +10,7 @@ import Speech
   private let speechRecognizerRu = SFSpeechRecognizer(locale: Locale(identifier: "ru_RU"))!
   private let speechRecognizerIt = SFSpeechRecognizer(locale: Locale(identifier: "it_IT"))!
 
-  private var recorderChannel: FlutterMethodChannel?
+  private var speechChannel: FlutterMethodChannel?
 
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 
@@ -24,9 +24,9 @@ import Speech
 
     let controller: FlutterViewController = window?.rootViewController as! FlutterViewController
 
-    recorderChannel = FlutterMethodChannel.init(name: "bz.rxla.flutter/recorder",
+    speechChannel = FlutterMethodChannel.init(name: "bz.rxla.flutter/recognizer",
        binaryMessenger: controller)
-    recorderChannel!.setMethodCallHandler({
+    speechChannel!.setMethodCallHandler({
       (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
       if ("start" == call.method) {
         self.startRecognition(lang: call.arguments as! String, result: result)
@@ -124,10 +124,10 @@ import Speech
 
       if let result = result {
         print("Speech : \(result.bestTranscription.formattedString)")
-        self.recorderChannel?.invokeMethod("onSpeech", arguments: result.bestTranscription.formattedString)
+        self.speechChannel?.invokeMethod("onSpeech", arguments: result.bestTranscription.formattedString)
         isFinal = result.isFinal
         if isFinal {
-          self.recorderChannel!.invokeMethod(
+          self.speechChannel!.invokeMethod(
              "onRecognitionComplete",
              arguments: result.bestTranscription.formattedString
           )
@@ -151,7 +151,7 @@ import Speech
     audioEngine.prepare()
     try audioEngine.start()
 
-    recorderChannel!.invokeMethod("onRecognitionStarted", arguments: nil)
+    speechChannel!.invokeMethod("onRecognitionStarted", arguments: nil)
   }
 
   private func getRecognizer(lang: String) -> Speech.SFSpeechRecognizer {
@@ -171,9 +171,9 @@ import Speech
 
   public func speechRecognizer(_ speechRecognizer: SFSpeechRecognizer, availabilityDidChange available: Bool) {
     if available {
-      recorderChannel?.invokeMethod("onSpeechAvailability", arguments: true)
+      speechChannel?.invokeMethod("onSpeechAvailability", arguments: true)
     } else {
-      recorderChannel?.invokeMethod("onSpeechAvailability", arguments: false)
+      speechChannel?.invokeMethod("onSpeechAvailability", arguments: false)
     }
   }
 
