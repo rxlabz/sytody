@@ -1,5 +1,7 @@
 # Sytôdy, a Flutter "speech to text" todo app POC
 
+
+
 :warning: iOS10(Swift) & Android
 
 [![screenshot](screenshot.png)](https://youtu.be/7MGuNZfgGWw)
@@ -17,11 +19,17 @@ flutter run
 
 ## How it works
 
-The flutter app open a channel on the host platform. It uses it :
+**TL;DR** The flutter app open a channel on the host platform. It uses it :
  
  - to ask for speech recognition and microphone usage. The permission is asked on the first application launch 
  - to start, cancel and stop the speech recognition 
  - to listen to the recognition result
+ 
+ **Flutter, native APIs and plugins**
+ 
+- [1. Sytody](https://medium.com/@rxlabz/flutter-native-apis-and-plugins-1-3-3db651d79a7c)
+- [2. Flutter channels](https://medium.com/@rxlabz/flutter-api-natives-et-plugins-2-3-27cbe7bb36ee)
+- [3. Flutter plugins](https://hackernoon.com/flutter-native-apis-and-plugins-3-3-b84776fc8a7e)
  
 ### Recognition
 
